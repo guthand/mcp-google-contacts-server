@@ -1,0 +1,28 @@
+services:
+  mcp-google-contacts:
+    build: .
+    container_name: mcp-google-contacts-server
+    ports:
+      - "8000:8000"
+    environment:
+      - STATELESS_MODE=true
+      - TRANSPORT_MODE=http
+      - PORT=8000
+    volumes:
+      # Optional: Mount credentials file for stateful mode (read-only)
+      # - ./credentials.json:/app/credentials.json:ro
+      # Persistent storage for credentials and tokens
+      - credentials_data:/app/credentials:rw
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  credentials_data:
+    driver: local

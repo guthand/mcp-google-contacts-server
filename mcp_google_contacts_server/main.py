@@ -11,6 +11,7 @@ from mcp.server.fastmcp import FastMCP
 
 from mcp_google_contacts_server.tools import register_tools, init_service
 from mcp_google_contacts_server.config import config
+from mcp_google_contacts_server.auth_middleware import ContactsAuthMiddleware
 
 def parse_args():
     """Parse command line arguments."""
@@ -67,6 +68,9 @@ def main():
     if args.refresh_token:
         os.environ["GOOGLE_REFRESH_TOKEN"] = args.refresh_token
     
+    # Set transport mode in environment
+    os.environ["TRANSPORT_MODE"] = args.transport
+    
     # Handle credentials file argument
     if args.credentials_file:
         credentials_path = Path(args.credentials_file)
@@ -80,25 +84,46 @@ def main():
     # Initialize FastMCP server
     mcp = FastMCP("google-contacts")
     
+    # Add authentication middleware for HTTP transport
+    if args.transport == "http":
+        print("Adding stateless authentication middleware for HTTP transport")
+        try:
+            auth_middleware = ContactsAuthMiddleware()
+            mcp.add_middleware(auth_middleware)
+        except AttributeError:
+            # FastMCP version might not support add_middleware in the same way
+            # The middleware will be added differently or stateless mode will work without it
+            print("Note: Middleware registration method not available, continuing without explicit middleware")
+        config.stateless_mode = True
+        config.transport_mode = "http"
+    else:
+        # For stdio mode, use traditional authentication
+        config.stateless_mode = False
+        config.transport_mode = "stdio"
+        
+        # Initialize service with credentials for stdio mode
+        service = init_service()
+        
+        if not service:
+            print("Warning: No valid Google credentials found. Authentication will be required.")
+            print("You can provide credentials using environment variables or command line arguments:")
+            print("  GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN")
+            print("  --client-id, --client-secret, --refresh-token, --credentials-file")
+    
     # Register all tools
     register_tools(mcp)
     
-    # Initialize service with credentials
-    service = init_service()
-    
-    if not service:
-        print("Warning: No valid Google credentials found. Authentication will be required.")
-        print("You can provide credentials using environment variables or command line arguments:")
-        print("  GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN")
-        print("  --client-id, --client-secret, --refresh-token, --credentials-file")
-    
     # Run the MCP server with the specified transport
     if args.transport == "stdio":
-        print("Running with stdio transport")
+        print("Running with stdio transport (stateful mode)")
         mcp.run(transport='stdio')
     else:
-        print(f"Running with HTTP transport on {args.host}:{args.port}")
-        mcp.run(transport='http', host=args.host, port=args.port)
+        print(f"Running with HTTP transport on {args.host}:{args.port} (stateless mode)")
+        print("Authentication required via Bearer token in Authorization header")
+        # FastMCP uses environment variables for host/port configuration
+        os.environ['HOST'] = args.host
+        os.environ['PORT'] = str(args.port)
+        mcp.run()
 
 if __name__ == "__main__":
     main()

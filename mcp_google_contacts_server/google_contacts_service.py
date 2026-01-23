@@ -88,6 +88,31 @@ class GoogleContactsService:
         
         return cls(credentials_info, token_path)
     
+    @classmethod
+    def from_credentials(cls, credentials) -> 'GoogleContactsService':
+        """Create service instance from existing Google OAuth2 Credentials.
+        
+        This method is used for stateless authentication where credentials are provided
+        per-request via Bearer tokens.
+        
+        Args:
+            credentials: Google OAuth2 Credentials object
+            
+        Returns:
+            Configured GoogleContactsService instance
+            
+        Raises:
+            GoogleContactsError: If credentials are invalid
+        """
+        try:
+            instance = cls.__new__(cls)
+            instance.credentials_info = None
+            instance.token_path = None
+            instance.service = build('people', 'v1', credentials=credentials)
+            return instance
+        except Exception as e:
+            raise GoogleContactsError(f"Failed to create service from credentials: {str(e)}")
+    
     def _authenticate(self):
         """Authenticate with Google using credentials info.
         

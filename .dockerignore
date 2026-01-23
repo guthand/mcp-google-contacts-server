@@ -1,0 +1,87 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.iml
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (not needed in container, but we need README for package info)
+# Keep essential docs, exclude others
+STATELESS_AUTH_IMPLEMENTATION.md
+QUICKSTART_STATELESS.md
+DOCKER.md
+docs/
+
+# Tests
+tests/
+*.test.py
+test_*.py
+*_test.py
+
+# Credentials (mount as volumes instead)
+credentials.json
+token.json
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+client_secret.json
+
+# Reference repo - not needed in container
+google_workspace_mcp/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Other
+.DS_Store
+*.log
+Thumbs.db
+*.bak
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Cursor/editor specific
+.cursor/
+
+# Build artifacts
+*.whl

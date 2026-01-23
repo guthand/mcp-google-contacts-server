@@ -36,6 +36,14 @@ class ContactsConfig(BaseModel):
         ],
         description="OAuth scopes required for the application"
     )
+    stateless_mode: bool = Field(
+        default=False,
+        description="Enable stateless authentication mode (per-request auth via Bearer tokens)"
+    )
+    transport_mode: str = Field(
+        default="stdio",
+        description="Transport mode: 'stdio' or 'http'"
+    )
 
 def load_config() -> ContactsConfig:
     """Load configuration from environment variables and defaults."""
@@ -50,12 +58,22 @@ def load_config() -> ContactsConfig:
     token_dir = Path.home() / ".config" / "google-contacts-mcp"
     token_dir.mkdir(parents=True, exist_ok=True)
     
+    # Determine stateless mode - enabled for HTTP transport or explicit env var
+    stateless_mode = os.environ.get("STATELESS_MODE", "").lower() in ("1", "true", "yes")
+    transport_mode = os.environ.get("TRANSPORT_MODE", "stdio").lower()
+    
+    # Auto-enable stateless mode for HTTP transport
+    if transport_mode == "http":
+        stateless_mode = True
+    
     return ContactsConfig(
         google_client_id=os.environ.get("GOOGLE_CLIENT_ID"),
         google_client_secret=os.environ.get("GOOGLE_CLIENT_SECRET"),
         google_refresh_token=os.environ.get("GOOGLE_REFRESH_TOKEN"),
         credentials_paths=default_paths,
-        token_path=token_dir / "token.json"
+        token_path=token_dir / "token.json",
+        stateless_mode=stateless_mode,
+        transport_mode=transport_mode
     )
 
 # Global configuration instance
