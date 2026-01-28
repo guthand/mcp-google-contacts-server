@@ -120,10 +120,12 @@ def main():
     else:
         print(f"Running with HTTP transport on {args.host}:{args.port} (stateless mode)")
         print("Authentication required via Bearer token in Authorization header")
-        # FastMCP uses environment variables for host/port configuration
-        os.environ['HOST'] = args.host
-        os.environ['PORT'] = str(args.port)
-        mcp.run()
+        # Enable stateless HTTP mode via environment variable
+        os.environ['FASTMCP_STATELESS_HTTP'] = 'true'
+        # Create ASGI app and run with uvicorn
+        import uvicorn
+        app = mcp.streamable_http_app()
+        uvicorn.run(app, host=args.host, port=args.port)
 
 if __name__ == "__main__":
     main()
