@@ -66,8 +66,8 @@ def register_tools(mcp: FastMCP) -> None:
         mcp: FastMCP server instance
     """
     
-    @require_google_service("people", scopes=["contacts"], version="v1")
     @mcp.tool()
+    @require_google_service("people", scopes=["contacts"], version="v1")
     async def list_contacts(service, name_filter: Optional[str] = None, max_results: int = 100) -> str:
         """List all contacts or filter by name.
         
@@ -83,8 +83,8 @@ def register_tools(mcp: FastMCP) -> None:
         except Exception as e:
             return f"Error: Failed to list contacts - {str(e)}"
 
-    @require_google_service("people", scopes=["contacts"], version="v1")
     @mcp.tool()
+    @require_google_service("people", scopes=["contacts"], version="v1")
     async def get_contact(service, identifier: str) -> str:
         """Get a contact by resource name or email.
         
@@ -98,8 +98,8 @@ def register_tools(mcp: FastMCP) -> None:
         except Exception as e:
             return f"Error: Failed to get contact - {str(e)}"
 
-    @require_google_service("people", scopes=["contacts"], version="v1")
     @mcp.tool()
+    @require_google_service("people", scopes=["contacts"], version="v1")
     async def create_contact(service, given_name: str, family_name: Optional[str] = None, 
                            email: Optional[str] = None, phone: Optional[str] = None) -> str:
         """Create a new contact.
@@ -122,8 +122,8 @@ def register_tools(mcp: FastMCP) -> None:
         except Exception as e:
             return f"Error: Failed to create contact - {str(e)}"
 
-    @require_google_service("people", scopes=["contacts"], version="v1")
     @mcp.tool()
+    @require_google_service("people", scopes=["contacts"], version="v1")
     async def update_contact(service, resource_name: str, given_name: Optional[str] = None, 
                            family_name: Optional[str] = None, email: Optional[str] = None,
                            phone: Optional[str] = None) -> str:
@@ -149,8 +149,8 @@ def register_tools(mcp: FastMCP) -> None:
         except Exception as e:
             return f"Error: Failed to update contact - {str(e)}"
 
-    @require_google_service("people", scopes=["contacts"], version="v1")
     @mcp.tool()
+    @require_google_service("people", scopes=["contacts"], version="v1")
     async def delete_contact(service, resource_name: str) -> str:
         """Delete a contact by resource name.
         
@@ -167,8 +167,8 @@ def register_tools(mcp: FastMCP) -> None:
         except Exception as e:
             return f"Error: Failed to delete contact - {str(e)}"
 
-    @require_google_service("people", scopes=["contacts"], version="v1")
     @mcp.tool()
+    @require_google_service("people", scopes=["contacts"], version="v1")
     async def search_contacts(service, query: str, max_results: int = 10) -> str:
         """Search contacts by name, email, or phone number.
         
@@ -202,8 +202,8 @@ def register_tools(mcp: FastMCP) -> None:
         except Exception as e:
             return f"Error: Failed to search contacts - {str(e)}"
 
-    @require_google_service("people", scopes=["directory_readonly"], version="v1")
     @mcp.tool()
+    @require_google_service("people", scopes=["directory_readonly"], version="v1")
     async def list_workspace_users(service, query: Optional[str] = None, max_results: int = 50) -> str:
         """List Google Workspace users in your organization's directory.
         
@@ -221,8 +221,8 @@ def register_tools(mcp: FastMCP) -> None:
         except Exception as e:
             return f"Error: Failed to list Google Workspace users - {str(e)}"
 
-    @require_google_service("people", scopes=["directory_readonly"], version="v1")
     @mcp.tool()
+    @require_google_service("people", scopes=["directory_readonly"], version="v1")
     async def search_directory(service, query: str, max_results: int = 20) -> str:
         """Search for people specifically in the Google Workspace directory.
         
@@ -239,8 +239,8 @@ def register_tools(mcp: FastMCP) -> None:
         except Exception as e:
             return f"Error: Failed to search directory - {str(e)}"
 
-    @require_google_service("people", scopes=["contacts"], version="v1")
     @mcp.tool()
+    @require_google_service("people", scopes=["contacts"], version="v1")
     async def get_other_contacts(service, max_results: int = 50) -> str:
         """Retrieve contacts from the 'Other contacts' section.
         
