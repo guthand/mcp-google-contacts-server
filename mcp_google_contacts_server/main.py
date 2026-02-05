@@ -11,7 +11,6 @@ from mcp.server.fastmcp import FastMCP
 
 from mcp_google_contacts_server.tools import register_tools, init_service
 from mcp_google_contacts_server.config import config
-from mcp_google_contacts_server.auth_middleware import ContactsAuthMiddleware
 
 def parse_args():
     """Parse command line arguments."""
@@ -84,18 +83,11 @@ def main():
     # Initialize FastMCP server
     mcp = FastMCP("google-contacts")
     
-    # Add authentication middleware for HTTP transport
+    # Configure stateless mode for HTTP transport
     if args.transport == "http":
-        print("Adding stateless authentication middleware for HTTP transport")
-        try:
-            auth_middleware = ContactsAuthMiddleware()
-            mcp.add_middleware(auth_middleware)
-        except AttributeError:
-            # FastMCP version might not support add_middleware in the same way
-            # The middleware will be added differently or stateless mode will work without it
-            print("Note: Middleware registration method not available, continuing without explicit middleware")
         config.stateless_mode = True
         config.transport_mode = "http"
+        print("HTTP/stateless mode enabled - Bearer token authentication will be handled at tool level")
     else:
         # For stdio mode, use traditional authentication
         config.stateless_mode = False

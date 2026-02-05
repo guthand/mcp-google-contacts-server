@@ -6,17 +6,20 @@ builds authenticated Google API service clients, and injects them into tool func
 """
 import inspect
 import logging
+import requests
 from functools import wraps
 from typing import Any, Callable, List, Optional, Union
 
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from google.auth.exceptions import RefreshError
-from fastmcp.server.dependencies import get_context
+from fastmcp.server.dependencies import get_context, get_http_headers
 
 from mcp_google_contacts_server.context import (
     get_injected_oauth_credentials,
     get_user_email,
+    set_injected_oauth_credentials,
+    set_user_email,
 )
 
 logger = logging.getLogger(__name__)
@@ -74,9 +77,44 @@ def _resolve_scopes(scopes: Union[str, List[str]]) -> List[str]:
     return resolved
 
 
+def _verify_google_token(token: str) -> Optional[dict]:
+    """
+    Verify a Google OAuth access token and extract user info.
+    
+    Args:
+        token: The access token to verify
+        
+    Returns:
+        Dictionary with user info (email, scopes) or None if invalid
+    """
+    try:
+        response = requests.get(
+            'https://www.googleapis.com/oauth2/v3/tokeninfo',
+            params={'access_token': token},
+            timeout=5
+        )
+        
+        if response.status_code == 200:
+            token_info = response.json()
+            return {
+                'email': token_info.get('email'),
+                'scopes': token_info.get('scope', '').split(),
+                'expires_in': int(token_info.get('expires_in', 3600)),
+                'sub': token_info.get('sub'),
+            }
+        else:
+            logger.warning(f"Token verification failed: {response.status_code}")
+            return None
+            
+    except Exception as e:
+        logger.error(f"Error verifying token: {e}")
+        return None
+
+
 def _get_auth_context(tool_name: str) -> tuple[Optional[str], Optional[Any]]:
     """
     Get authentication context from FastMCP or request context.
+    If not found, attempts to extract Bearer token from HTTP headers directly.
     
     Args:
         tool_name: Name of the tool being called (for logging)
@@ -102,6 +140,49 @@ def _get_auth_context(tool_name: str) -> tuple[Optional[str], Optional[Any]]:
             if authenticated_user and credentials_obj:
                 logger.debug(f"[{tool_name}] Found credentials in FastMCP context for {authenticated_user}")
                 return authenticated_user, credentials_obj
+        
+        # If no credentials found, try to extract from HTTP headers (for stateless/HTTP mode)
+        try:
+            headers = get_http_headers()
+            if headers:
+                auth_header = headers.get("authorization", "")
+                
+                if auth_header.startswith("Bearer "):
+                    token_str = auth_header[7:]  # Remove "Bearer " prefix
+                    logger.debug(f"[{tool_name}] Found Bearer token in Authorization header")
+                    
+                    # For Google OAuth tokens (ya29.*), verify them
+                    if token_str.startswith("ya29."):
+                        logger.debug(f"[{tool_name}] Detected Google OAuth access token format")
+                        
+                        # Verify the token
+                        verified_info = _verify_google_token(token_str)
+                        
+                        if not verified_info:
+                            logger.error(f"[{tool_name}] Failed to verify Google OAuth token")
+                            return None, None
+                        
+                        user_email = verified_info.get('email')
+                        if not user_email:
+                            logger.error(f"[{tool_name}] No email in verified token")
+                            return None, None
+                        
+                        # Create a Credentials object from the access token
+                        credentials = Credentials(
+                            token=token_str,
+                            scopes=verified_info.get('scopes', [])
+                        )
+                        
+                        # Store in context for future use in this request
+                        set_injected_oauth_credentials(credentials)
+                        set_user_email(user_email)
+                        
+                        logger.info(f"[{tool_name}] Authenticated via Bearer token: {user_email}")
+                        return user_email, credentials
+                    else:
+                        logger.debug(f"[{tool_name}] Token format not recognized (not a Google OAuth token)")
+        except Exception as e:
+            logger.debug(f"[{tool_name}] Could not extract Bearer token from headers: {e}")
         
         logger.debug(f"[{tool_name}] No authentication context found")
         return None, None
